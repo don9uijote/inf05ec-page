@@ -1,0 +1,171 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>第一人称视角移动</title>
+    <script src="./JS/jquery-3.4.1.min.js"></script>
+    <script src="./ThreeJS/three.js"></script><!DOCTYPE html>
+    <script src="./ThreeJS/GLTFLoader.js"></script>
+</head>
+<body>
+<canvas id="mainCanvas"></canvas>
+</body>
+<script>
+    var cubeGeometry = new THREE.BoxGeometry(3, 3, 3);
+    var cubeMaterial = new THREE.MeshBasicMaterial({color:0xff9900,wireframe:true});
+    var box = new THREE.Mesh(cubeGeometry,cubeMaterial);
+    let scene, camera, renderer, leftPress, cube, arrowFront, arrowFrontX, arrowFrontZ;
+    let left, right, front, back;
+    let shift;
+    let dun = false;
+    let space = false, spaceValue,abc;
+    var loader = new THREE.GLTFLoader();
+    loader.load( './GLB/awp.glb', function (gun) {
+        init(gun);helper();animate();
+    }, undefined, function (error) {
+        console.error(error);
+    });
+    function init(gun) {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xffffff);
+        renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById("mainCanvas"),
+            antialias: true,
+            alpha: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.01, 1000);
+        camera.position.set(0, 10, 30);
+        scene.add(camera);
+        gun.scene.position.x = 1;
+        gun.scene.position.y = -1;
+        gun.scene.position.z = -2;
+        gun.scene.rotation.y = 1.5;
+        camera.add(gun.scene);
+        mouse = new THREE.Vector2();
+        raycaster = new THREE.Raycaster();
+        var ambientLight = new THREE.AmbientLight(0x606060);
+        scene.add(ambientLight);
+        var directionalLight = new THREE.DirectionalLight(0xBCD2EE);
+        directionalLight.position.set(1, 0.75, 0.5).normalize();
+        scene.add(directionalLight);
+    }
+    function helper() {
+        var grid = new THREE.GridHelper(100, 20, 0xFF0000, 0x000000);
+        grid.material.opacity = 0.1;
+        grid.material.transparent = true;
+        scene.add(grid);
+        var axesHelper = new THREE.AxesHelper(30);
+        scene.add(axesHelper);
+    }
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+        let speed = 0.025;
+        if (shift) speed *= 2.5;
+        let vect = camera.getWorldDirection(new THREE.Vector3());
+        if (front) {
+            camera.position.z += vect.dot(new THREE.Vector3(0, 0, 15)) * speed;
+            camera.position.x += vect.dot(new THREE.Vector3(15, 0, 0)) * speed;
+        }
+        if (back) {
+            camera.position.z -= vect.dot(new THREE.Vector3(0, 0, 15)) * speed;
+            camera.position.x -= vect.dot(new THREE.Vector3(15, 0, 0)) * speed;
+        }
+        if (left) {
+            camera.position.z -= vect.dot(new THREE.Vector3(15, 0, 0)) * speed;
+            camera.position.x += vect.dot(new THREE.Vector3(0, 0, 15)) * speed;
+        }
+        if (right) {
+            camera.position.z += vect.dot(new THREE.Vector3(15, 0, 0)) * speed;
+            camera.position.x -= vect.dot(new THREE.Vector3(0, 0, 15)) * speed;
+        }
+        if (space === true) {
+            camera.position.y = 10 + (-Math.pow(spaceValue, 2) + 5 * spaceValue);
+            spaceValue += 0.1;
+            if (camera.position.y < 10) {
+                camera.position.y = 10;
+                space = false;
+                dun = false;
+            }
+        }
+
+    }
+    $(window).mousemove(function (event) {
+        event.preventDefault();
+        if (document.pointerLockElement !== null) {
+            camera.rotateOnWorldAxis(
+                new THREE.Vector3(0, 1, 0),
+                event.originalEvent.movementX / -500
+            );
+            camera.rotateOnAxis(
+                new THREE.Vector3(1, 0, 0),
+                event.originalEvent.movementY / -500
+            );
+        }
+    });
+    $(window).mousedown(function (event) {
+        event.preventDefault();
+        leftPress = true;
+
+    });
+    $(window).mouseup(function (event) {
+        event.preventDefault();
+        leftPress = false;
+    });
+    $(window).keydown(function (event) {
+        switch (event.keyCode) {
+            case 65: left = true; break;
+            case 68: right = true; break;
+            case 83: back = true; break;
+            case 87: front = true; break;
+        }
+        if (event.keyCode === 67 && space !== true) {
+            if (dun === false) {
+                camera.position.y = 5;
+                dun = true;
+            }else {
+                camera.position.y = 10;
+                dun = false;
+            }
+        }
+        if (event.keyCode === 32 && space !== true) {
+            camera.position.y = 10;
+            spaceValue = 0;
+            space = true;
+        }
+        if (event.shiftKey === true && space !== true) {
+            shift = true;
+        }
+    });
+    $(window).keyup(function (event) {
+        switch (event.keyCode) {
+            case 65: left = false; break;
+            case 68: right = false; break;
+            case 83: back = false; break;
+            case 87: front = false; break;
+        }
+        if (event.shiftKey !== true) {
+            shift = false;
+        }
+    });
+    $('body').click(function () {
+        var element = document.body;
+        element.requestPointerLock = element.requestPointerLock || element.mozRequestPointerLock || element.webkitRequestPointerLock;
+        if (/Firefox/i.test(navigator.userAgent)) {
+            var fullscreenchange = function(event) {
+                if (document.fullscreenElement === element || document.mozFullscreenElement === element || document.mozFullScreenElement === element) {
+                    document.removeEventListener('fullscreenchange', fullscreenchange);
+                    document.removeEventListener('mozfullscreenchange', fullscreenchange);
+                    element.requestPointerLock();
+                }
+            };
+            document.addEventListener('fullscreenchange', fullscreenchange, false);
+            document.addEventListener('mozfullscreenchange', fullscreenchange, false);
+            element.requestFullscreen = element.requestFullscreen || element.mozRequestFullscreen || element.mozRequestFullScreen || element.webkitRequestFullscreen;
+            element.requestFullscreen();
+        } else {
+            element.requestPointerLock();
+        }
+    });
+</script>
+</html>

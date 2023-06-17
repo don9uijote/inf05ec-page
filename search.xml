@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>XSS 入门详解</title>
+    <url>/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3.html</url>
+    <content><![CDATA[<h1 id="0x01-简介"><a href="#0x01-简介" class="headerlink" title="0x01 简介"></a>0x01 简介</h1><p><strong>跨站脚本</strong>（cross site script）为了避免与样式css混淆，所以简称为XSS。 XSS是一种经常出现在web应用中的计算机安全漏洞，也是web中最主流的攻击方式。</p>
+<p><strong>XSS</strong> 攻击指黑客通过特殊的手段往网页中插入了恶意的 JavaScript 脚本，从而在用户浏览网页时，对用户浏览器发起 Cookie 资料窃取、会话劫持、钓鱼欺骗等各攻击。</p>
+<p>XSS 跨站脚本攻击本身对 Web 服务器没有直接危害，它借助网站进行传播，使网站的大量用户受到攻击。攻击者一般通过留言、电子邮件或其他途径向受害者发送一个精心构造的恶意 URL，当受害者在 Web 浏览器中打开该URL的时侯，恶意脚本会在受害者的计算机上悄悄执行。</p>
+<span id="more"></span>
+
+<p>XSS 跨站脚本攻击漏洞也是OWASP Top 10中经常出现的对象，造成XSS漏洞普遍流行的原因如下:</p>
+<ol>
+<li>Web 浏览器本身的设计不安全，无法判断 JS 代码是否是恶意的</li>
+<li>输入与输出的 Web 应用程序基本交互防护不够</li>
+<li>程序员缺乏安全意识，缺少对 XSS 漏洞的认知</li>
+<li>XSS 触发简单，完全防御起来相当困难</li>
+</ol>
+<p>XSS攻击的危害包括：</p>
+<ol>
+<li>盗取各类用户帐号，如机器登录帐号、用户网银帐号、各类管理员帐号</li>
+<li>控制企业数据，包括读取、篡改、添加、删除企业敏感数据的能力</li>
+<li>盗窃企业重要的具有商业价值的资料</li>
+<li>非法转账</li>
+<li>强制发送电子邮件</li>
+<li>网站挂马</li>
+<li>控制受害者机器向其它网站发起攻击</li>
+</ol>
+<h1 id="0x02-跨站脚本实例"><a href="#0x02-跨站脚本实例" class="headerlink" title="0x02 跨站脚本实例"></a>0x02 跨站脚本实例</h1><p>下面的 HTML 代码就演示了一个最基本的 XSS 弹窗:</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span>&gt;</span>alert(1)<span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>直接在 HTML 页面通过</p>
+<h1 id="0x03-XSS-的危害"><a href="#0x03-XSS-的危害" class="headerlink" title="0x03 XSS 的危害"></a>0x03 XSS 的危害</h1><p>XSS 可能不如 SQL 注射、文件上传等能够直接得到较高操作权限的漏洞，但是它的运用十分灵活（这使它成为最深受黑客喜爱的攻击技术之一），只要开拓思维，适当结合其他技术一起运用，XSS 的威力还是很大的。可能会给网站和用户带来的危害简单概括如下:</p>
+<ol>
+<li>网络钓鱼</li>
+<li>盗取用户 cookies 信息</li>
+<li>劫持用户浏览器</li>
+<li>强制弹出广告页面、刷流量</li>
+<li>网页挂马</li>
+<li>进行恶意操作，例如任意篡改页面信息</li>
+<li>获取客户端隐私信息</li>
+<li>控制受害者机器向其他网站发起攻击</li>
+<li>结合其他漏洞，如 CSRF 漏洞，实施进一步作恶</li>
+<li>提升用户权限，包括进一步渗透网站</li>
+<li>传播跨站脚本蠕虫等</li>
+</ol>
+<h1 id="0x04-分类"><a href="#0x04-分类" class="headerlink" title="0x04 分类"></a>0x04 分类</h1><h2 id="x0x04001-反射型XSS（非持久型）"><a href="#x0x04001-反射型XSS（非持久型）" class="headerlink" title="x0x04001 反射型XSS（非持久型）"></a>x0x04001 反射型XSS（非持久型）</h2><p>反射型XSS只是简单的把用户输入的数据从服务器反射给用户浏览器，要利用这个漏洞，攻击者必须以某种方式诱导用户访问一个精心设计的URL（恶意链接），才能实施攻击。</p>
+<p><strong>漏洞成因</strong></p>
+<ol>
+<li>当用户的输入或者一些用户可控参数未经处理地输出到页面上，就容易产生XSS漏洞。主要场景有以下几种:</li>
+<li>将不可信数据插入到HTML标签之间时，例如: div, p, td；</li>
+<li>将不可信数据插入到HTML属性里时，例如: <code>&lt;div width=$INPUT&gt;&lt;/div&gt;</code></li>
+<li>将不可信数据插入到SCRIPT里时，例如: <code>&lt;script&gt;var message = &quot;$INPUT&quot;;&lt;/script&gt;</code></li>
+<li>还有插入到Style属性里的情况，同样具有一定的危害性，例如: <code>&lt;span style=&quot;property : $INPUT&quot;&gt;&lt;/span&gt;</code></li>
+<li>将不可信数据插入到HTML URL里时，例如: <code>&lt;a href=&quot;[http://www.abcd.com?param=](http://www.ccc.com/?param=) $INPUT&quot;&gt;&lt;/a&gt;</code></li>
+<li>使用富文本时，没有使用XSS规则引擎进行编码过滤</li>
+</ol>
+<p>对于以上的几个场景，若服务端或者前端没有做好防范措施，就会出现漏洞隐患。</p>
+<p><strong>攻击流程</strong></p>
+<p>反射型XSS通常出现在搜索等功能中，需要被攻击者点击对应的链接才能触发，且受到XSS Auditor(chrome内置的XSS保护)、NoScript等防御手段的影响较大，所以它的危害性较存储型要小。</p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/01.png" alt="图01"></p>
+<h2 id="0x04002-存储型XSS（持久型）"><a href="#0x04002-存储型XSS（持久型）" class="headerlink" title="0x04002 存储型XSS（持久型）"></a>0x04002 存储型XSS（持久型）</h2><p><strong>漏洞成因</strong></p>
+<p>存储型XSS漏洞的成因与反射型的根源类似，不同的是恶意代码会被保存在服务器中，导致其它用户（前端）和管理员（前后端）在访问资源时执行了恶意代码，用户访问服务器-跨站链接-返回跨站代码。</p>
+<p><strong>攻击流程</strong></p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/02.png" alt="图02"></p>
+<h2 id="0x04003-DOM型XSS"><a href="#0x04003-DOM型XSS" class="headerlink" title="0x04003 DOM型XSS"></a>0x04003 DOM型XSS</h2><p>输入的恶意代码不会经过服务器，在前端被js代码直接读取放置到前端的标签中，是一 种特殊的反射型XSS。</p>
+<p><strong>漏洞成因</strong></p>
+<p>DOM型XSS是基于DOM文档对象模型的。对于浏览器来说，DOM文档就是一份XML文档，当有了这个标准的技术之后，通过JavaScript就可以轻松的访问DOM。当确认客户端代码中有DOM型XSS漏洞时，诱使(钓鱼)一名用户访问自己构造的URL，利用步骤和反射型很类似，但是唯一的区别就是，构造的URL参数不用发送到服务器端，可以达到绕过WAF、躲避服务端的检测效果。</p>
+<p>下面编写一个简单的含有 DOM XSS漏洞的 HTML 代码:</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">&quot;UTF-8&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">function</span> <span class="title function_">xss</span>(<span class="params"></span>)&#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="keyword">var</span> str = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;src&quot;</span>).<span class="property">value</span>;</span></span><br><span class="line"><span class="language-javascript">        <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;demo&quot;</span>).<span class="property">innerHTML</span> = <span class="string">&quot;&lt;img src=&#x27;&quot;</span>+str+<span class="string">&quot;&#x27; /&gt;&quot;</span>;</span></span><br><span class="line"><span class="language-javascript">    &#125;</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">&quot;text&quot;</span> <span class="attr">id</span>=<span class="string">&quot;src&quot;</span> <span class="attr">size</span>=<span class="string">&quot;50&quot;</span> <span class="attr">placeholder</span>=<span class="string">&quot;输入图片地址&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">&quot;button&quot;</span> <span class="attr">value</span>=<span class="string">&quot;插入&quot;</span> <span class="attr">onclick</span>=<span class="string">&quot;xss()&quot;</span> /&gt;</span><span class="tag">&lt;<span class="name">br</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;demo&quot;</span> &gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>用户输入框插入图片地址后，页面会将图片插入在id&#x3D;“demo” 的 div 标签中，从而显示在网页上:</p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/03.png" alt="图03"></p>
+<p>同样，这里也没有对用户的输入进入过滤，当攻击者构造如下语句插入的时候:</p>
+<figure class="highlight html"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">&quot;1&quot;</span> <span class="attr">onerror</span>=<span class="string">&quot;alert(1)&quot;</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/04.png" alt="图04"></p>
+<p>会直接在img标签中插入onerror事件，该语句表示当图片加载出错的时候，自动触发后面的 alert()函数，来达到弹窗的效果，这就是一个最简单的 DOM 型 XSS 漏洞。</p>
+<h2 id="0x04004-通用型XSS"><a href="#0x04004-通用型XSS" class="headerlink" title="0x04004 通用型XSS"></a>0x04004 通用型XSS</h2><p>通用型XSS，也叫做UXSS或者Universal XSS，全称Universal Cross-Site Scripting。</p>
+<p>上面三种XSS攻击的是因为客户端或服务端的代码开发不严谨等问题而存在漏洞的目标网站或者应用程序。这些攻击的先决条件是访问页面存在漏洞，但是UXSS是一种利用浏览器或者浏览器扩展漏洞来制造产生XSS的条件并执行代码的一种攻击类型。</p>
+<p><strong>漏洞成因</strong></p>
+<p>Web浏览器是正在使用的最流行的应用程序之一，当一个新漏洞被发现的时候，不管自己利用还是说报告给官方，而这个过程中都有一段不小的时间，这一过程中漏洞都可能被利用于UXSS。</p>
+<p>不仅是浏览器本身的漏洞，现在主流浏览器都支持扩展程序的安装，而众多的浏览器扩展程序可能导致带来更多的漏洞和安全问题。因为UXSS攻击不需要网站页面本身存在漏洞，同时可能访问其他安全无漏洞页面，使得UXSS成为XSS里危险和最具破坏性的攻击类型之一。</p>
+<p><strong>漏洞案例</strong></p>
+<p>IE6或火狐浏览器扩展程序Adobe Acrobat的漏洞</p>
+<p>这是一个比较经典的例子。当使用扩展程序时导致错误，使得代码可以执行。这是一个在pdf阅读器中的bug，允许攻击者在客户端执行脚本。构造恶意页面，写入恶意脚本，并利用扩展程序打开pdf时运行代码。tefano Di Paola 和 Giorgio Fedon在一个在Mozilla Firefox浏览器Adobe Reader的插件中可利用的缺陷中第一个记录和描述的UXSS，Adobe插件通过一系列参数允许从外部数据源取数据进行文档表单的填充，如果没有正确的执行，将允许跨站脚本攻击。</p>
+<h2 id="0x04005-突变型XSS"><a href="#0x04005-突变型XSS" class="headerlink" title="0x04005 突变型XSS"></a>0x04005 突变型XSS</h2><p>突变型XSS，也叫做mXSS或，全称Mutation-based Cross-Site-Scripting。（mutation，突变，来自遗传学的一个单词，大家都知道的基因突变，gene mutation）</p>
+<p><strong>漏洞成因</strong></p>
+<p>然而，如果用户所提供的富文本内容通过javascript代码进入innerHTML属性后，一些意外的变化会使得这个认定不再成立：浏览器的渲染引擎会将本来没有任何危害的HTML代码渲染成具有潜在危险的XSS攻击代码。</p>
+<p>随后，该段攻击代码，可能会被JS代码中的其它一些流程输出到DOM中或是其它方式被再次渲染，从而导致XSS的执行。 这种由于HTML内容进入innerHTML后发生意外变化，而最终导致XSS的攻击流程。</p>
+<p><strong>攻击流程</strong></p>
+<p>将拼接的内容置于innerHTML这种操作，在现在的WEB应用代码中十分常见，常见的WEB应用中很多都使用了innerHTML属性，这将会导致潜在的mXSS攻击。从浏览器角度来讲，mXSS对三大主流浏览器（IE，CHROME，FIREFOX）均有影响。</p>
+]]></content>
+      <categories>
+        <category>Security</category>
+        <category>WEB</category>
+      </categories>
+      <tags>
+        <tag>xss</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MySQL 数据导入失败的常见报错和解决方法</title>
+    <url>/2021/05/MySQL%20%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5%E5%A4%B1%E8%B4%A5%E7%9A%84%E5%B8%B8%E8%A7%81%E6%8A%A5%E9%94%99%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95.html</url>
+    <content><![CDATA[<h1 id="0x01-MySQL-报-“Error-2006-MySQLserver-has-gone-away”-的解决方法"><a href="#0x01-MySQL-报-“Error-2006-MySQLserver-has-gone-away”-的解决方法" class="headerlink" title="0x01 MySQL 报 “Error 2006 MySQLserver has gone away” 的解决方法"></a>0x01 MySQL 报 “Error 2006 MySQLserver has gone away” 的解决方法</h1><p>找到 MySQL 安装目录下的 my.ini（Linux 下为 &#x2F;etc&#x2F;my.cnf）配置文件，进行如下配置：</p>
+<blockquote>
+<p>max_allowed_packet&#x3D;500M<br>wait_timeout&#x3D;288000<br>interactive_timeout &#x3D; 288000</p>
+</blockquote>
+<span id="more"></span>
+
+<p>修改后重启下 MySQL 服务后问题解决。</p>
+<p>三个参数注释如下：</p>
+<p>max_allowed_packet 是 MySQL 允许最大的数据包，也就是你发送的请求；<br>wait_timeout 是等待的最长时间，这个值大家可以自定义，但如果时间太短的话，超时就会报错；<br>max_allowed_packet 参数的作用是，用来控制其通信缓冲区的最大长度；</p>
+<h1 id="0x02-MySQL-报-“Error-1292-Incorrect-datetime-value-0000-00-00-00-00-00-……”-的解决方法"><a href="#0x02-MySQL-报-“Error-1292-Incorrect-datetime-value-0000-00-00-00-00-00-……”-的解决方法" class="headerlink" title="0x02 MySQL 报 “Error 1292 Incorrect datetime value: 0000-00-00 00:00:00 ……” 的解决方法"></a>0x02 MySQL 报 “Error 1292 Incorrect datetime value: 0000-00-00 00:00:00 ……” 的解决方法</h1><p>这是因为当前的 MySQL 不支持 datetime 类型数据为 0 的情况。</p>
+<p><strong>解决方法：修改 sql_mode 值</strong></p>
+<blockquote>
+<p>sql_mode：SQL Mode 定义了 MySQL 应支持的 SQL 语法、数据校验等，这样可以更容易地在不同的环境中使用 MySQL。 </p>
+</blockquote>
+<p><strong>修改全局 sql_mode</strong> </p>
+<p>查看全局 sql_mode：</p>
+<pre><code>select @@global.sql_mode;
+</code></pre>
+<p>可以看到 NO_ZERO_DATE 和 NO_ZERO_IN_DATE，把这两个设置去掉。</p>
+<pre><code>set @@global.sql_mode = &#39;在原值基础上去掉上面两个后的值&#39;;
+</code></pre>
+<p>P.S. 修改当前 sql_mode 的 语句为 <code>select @@sql_mode;</code>，之后操作同上。</p>
+]]></content>
+      <categories>
+        <category>Database</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>mysql</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Android 开发之活动</title>
+    <url>/2021/01/Android%20%E5%BC%80%E5%8F%91%E4%B9%8B%E6%B4%BB%E5%8A%A8.html</url>
+    <content><![CDATA[<h1 id="0x00-活动是什么"><a href="#0x00-活动是什么" class="headerlink" title="0x00 活动是什么"></a>0x00 活动是什么</h1><p>活动（Activity）是一众可以包含用户界面的组件，主要用于和用户交互。</p>
+<span id="more"></span>
+
+<h1 id="0x01-手动创建一个活动"><a href="#0x01-手动创建一个活动" class="headerlink" title="0x01 手动创建一个活动"></a>0x01 手动创建一个活动</h1><p><strong>创建活动</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">FirstActivity</span> <span class="keyword">extends</span> <span class="title class_">AppCompatActivity</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">onCreate</span><span class="params">(Bundle savedInstanceState)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ul>
+<li>项目中的任何活动都应该重写 Activity 的 onCreate() 方法</li>
+</ul>
+</blockquote>
+<h1 id="0x02-创建和加载布局"><a href="#0x02-创建和加载布局" class="headerlink" title="0x02 创建和加载布局"></a>0x02 创建和加载布局</h1><p><strong>创建布局</strong></p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">LinearLayout</span> <span class="attr">xmlns:android</span>=<span class="string">&quot;http://schemas.android.com/apk/res/android&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">android:orientation</span>=<span class="string">&quot;vertical&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">android:layout_width</span>=<span class="string">&quot;match_parent&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">android:layout_height</span>=<span class="string">&quot;match_parent&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">Button</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:id</span>=<span class="string">&quot;@+id/button_1&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:layout_width</span>=<span class="string">&quot;match_parent&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:layout_height</span>=<span class="string">&quot;wrap_content&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:text</span>=<span class="string">&quot;Button 1&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">LinearLayout</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ul>
+<li>LinearLayout 是布局根元素之一  </li>
+<li>android:id 是给当前元素定义一个唯一标识符，可以再代码中根据标识符对这个元素进行操作  </li>
+<li>match_parent 表示让当前元素的尺寸和父元素相同，wrap_content 表示当前元素的尺寸刚好包含里面的内容</li>
+</ul>
+</blockquote>
+<p><strong>在活动中加载布局</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">FirstActivity</span> <span class="keyword">extends</span> <span class="title class_">AppCompatActivity</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">onCreate</span><span class="params">(Bundle savedInstanceState)</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">super</span>.onCreate(savedInstanceState);</span><br><span class="line">        setContentView(R.layout.first_layout); <span class="comment">// 通过 setContentView 方法加载布局</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ul>
+<li>其中 first_layout 是布局文件名</li>
+</ul>
+</blockquote>
+<h1 id="0x03-在-AndroidManifest-文件中注册"><a href="#0x03-在-AndroidManifest-文件中注册" class="headerlink" title="0x03 在 AndroidManifest 文件中注册"></a>0x03 在 AndroidManifest 文件中注册</h1><p>所有的活动都要在 AndroidManifest.xml 中进行注册才能生效</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">manifest</span> <span class="attr">xmlns:android</span>=<span class="string">&quot;http://schemas.android.com/apk/res/android&quot;</span></span></span><br><span class="line"><span class="tag">    <span class="attr">package</span>=<span class="string">&quot;com.example.activitytest&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">application</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:allowBackup</span>=<span class="string">&quot;true&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:icon</span>=<span class="string">&quot;@mipmap/ic_launcher&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:label</span>=<span class="string">&quot;@string/app_name&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:supportsRtl</span>=<span class="string">&quot;true&quot;</span></span></span><br><span class="line"><span class="tag">        <span class="attr">android:theme</span>=<span class="string">&quot;@style/AppTheme&quot;</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">activity</span> <span class="attr">android:name</span>=<span class="string">&quot;.FirstActivity&quot;</span></span></span><br><span class="line"><span class="tag">            <span class="attr">android:label</span>=<span class="string">&quot;This is FirstActivity&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line">            <span class="tag">&lt;<span class="name">intent-filter</span>&gt;</span></span><br><span class="line"></span><br><span class="line">                <span class="tag">&lt;<span class="name">action</span> <span class="attr">android:name</span>=<span class="string">&quot;android.intent.action.Main&quot;</span> /&gt;</span></span><br><span class="line">                <span class="tag">&lt;<span class="name">category</span> <span class="attr">android:name</span>=<span class="string">&quot;android.intent.category.LAUNCHER&quot;</span> /&gt;</span></span><br><span class="line">            <span class="tag">&lt;/<span class="name">intent-filter</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">activity</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">application</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">manifest</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ul>
+<li>在 <activity> 标签中使用 android:name 来指定具体注册哪一个活动  </li>
+<li>.FirstActivity 是 com.example.activitytest.FirstActiviity 的缩写，在最外层 <manifest> 标签中定义了 package 属性  </li>
+<li>配置主活动的方法就是在 <activity> 标签的内部加入 <intent-filter> 标签，并在内部加入如上的两句声明  </li>
+<li>可以使用 android:label 指定活动中标题栏的内容，标题栏是显示在活动最顶部的，给主活动指定的 label 不仅会成为标题栏中的内容，还会成为启动器（Launcher）中应用程序显示的名称  </li>
+<li>如果应用程序中没有声明任何一个活动作为主活动程序仍然可以正常安装，只是启动器中无法看到或打开这个程序，这种程序一般作为第三方服务工其他应用在内部调用，如支付宝快捷支付服务</li>
+</ul>
+</blockquote>
+<h1 id="0x04-活动中使用-Toast（简单消息通知）"><a href="#0x04-活动中使用-Toast（简单消息通知）" class="headerlink" title="0x04 活动中使用 Toast（简单消息通知）"></a>0x04 活动中使用 Toast（简单消息通知）</h1><p>点击按钮显示消息通知</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title function_">onCreate</span> <span class="params">(Bundle savedInstanceState)</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">super</span>.onCreate(savedInstanceState);</span><br><span class="line">    setContentView(R.layout.first_layout);</span><br><span class="line">    <span class="type">Button</span> <span class="variable">button1</span> <span class="operator">=</span> (Button) findViewById(R.id.button_1); <span class="comment">// 绑定按钮</span></span><br><span class="line">    button1.setOnClickListener(<span class="keyword">new</span> <span class="title class_">View</span>.OnClickListener() &#123; <span class="comment">// 设置按钮监听</span></span><br><span class="line">        </span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onClick</span> <span class="params">(View v)</span> &#123; <span class="comment">// 重写父类方法</span></span><br><span class="line"></span><br><span class="line">            Toast.makeText(FirstActivity.<span class="built_in">this</span>, <span class="string">&quot;You clicked Button 1&quot;</span>, Toast.LENGTH_SHORT).show();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<ul>
+<li>通过 findViewById() 方法可以获取到布局文件定义的元素，传入 R.id.button_1 来获取按钮的实力（button_1 为布局中的 id 属性），findViewById() 方法返回的是一个 View 对象，需要向下转型成 Buttonb 对象</li>
+<li>通过 setOnClickListener() 方法为按钮注册一个监听器，点击按钮就会执行监听器中的 onClick() 方法</li>
+<li>makeText() 方法需要传入3个参数。第一个参数是Context，也就是上下文，活动本身就是一个 Context 对象，所以直接传入 FirstActivity.this 即可。第二个参数是 Toast 显示的文本内容。第三个参数是 Toast 显示的时长，有两个内置常量 Toast.LENGTH_SHORT 和 Toast.LENGTH_LONG 可选择。</li>
+</ul>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Android</category>
+      </categories>
+      <tags>
+        <tag>android</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>SpringBoot 实现邮件发送功能</title>
+    <url>/2020/12/SpringBoot%20%E5%AE%9E%E7%8E%B0%E9%82%AE%E4%BB%B6%E5%8F%91%E9%80%81%E5%8A%9F%E8%83%BD.html</url>
+    <content><![CDATA[<h1 id="0x00-添加Starter模块依赖"><a href="#0x00-添加Starter模块依赖" class="headerlink" title="0x00 添加Starter模块依赖"></a>0x00 添加Starter模块依赖</h1><p>在 Maven pom.xml 配置文件中加入 spring-boot-starter-mail 依赖。</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.springframework.boot<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>spring-boot-starter-mail<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h1 id="添加Spring-Boot配置"><a href="#添加Spring-Boot配置" class="headerlink" title="添加Spring Boot配置"></a>添加Spring Boot配置</h1><p>然后在 application.yml 文件中加入以下配置。</p>
+<p><strong>腾讯QQ邮箱配置</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">spring:</span><br><span class="line">  mail:</span><br><span class="line">    host: smtp.qq.com #发送邮件服务器</span><br><span class="line">    username: 1016767658@qq.com #发送邮件的邮箱地址</span><br><span class="line">    password:  ivhkrc*****kbdcf #客户端授权码，不是邮箱密码，这个在qq邮箱设置里面自动生成的</span><br><span class="line">    properties.mail.smtp.port: 465 #端口号465或587</span><br><span class="line">    from: 1016767658@qq.com # 发送邮件的地址，和上面username一致</span><br><span class="line">    properties.mail.smtp.starttls.enable: true</span><br><span class="line">    properties.mail.smtp.starttls.required: true</span><br><span class="line">    properties.mail.smtp.ssl.enable: true</span><br><span class="line">    default-encoding: utf-8</span><br></pre></td></tr></table></figure>
+
+<p><strong>网易(126&#x2F;163&#x2F;yeah)邮箱配置</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">spring:</span><br><span class="line">  mail:</span><br><span class="line">    host: smtp.126.com #发送邮件服务器</span><br><span class="line">    username: xx@126.com #发送邮件的邮箱地址</span><br><span class="line">    password: xxxxxxx #客户端授权码，不是邮箱密码,网易的是自己设置的</span><br><span class="line">    properties.mail.smtp.port: 994 #465或者994</span><br><span class="line">    from: xxx@126.com # 发送邮件的地址，和上面username一致</span><br><span class="line">    properties.mail.smtp.starttls.enable: true</span><br><span class="line">    properties.mail.smtp.starttls.required: true</span><br><span class="line">    properties.mail.smtp.ssl.enable: true</span><br><span class="line">    default-encoding: utf-8</span><br></pre></td></tr></table></figure>
+
+<p>注意：</p>
+<blockquote>
+<p>126邮箱SMTP服务器地址:smtp.126.com,端口号:465或者994<br>163邮箱SMTP服务器地址:smtp.163.com,端口号:465或者994<br>yeah邮箱SMTP服务器地址:smtp.yeah.net,端口号:465或者994  </p>
+</blockquote>
+<h1 id="Java-代码实现"><a href="#Java-代码实现" class="headerlink" title="Java 代码实现"></a>Java 代码实现</h1><p><strong>封装邮件接口，方便调用发送邮件 IMailService 接口</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.jiangfeixiang.sendemail;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: 姜飞祥</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>: 封装一个发邮件的接口，后边直接调用即可</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: Create in 2019/1/28/0028 21:57</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span>: $params$</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span>: $returns$</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IMailService</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 发送文本邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">void</span> <span class="title function_">sendSimpleMail</span><span class="params">(String to, String subject, String content)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 发送HTML邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendHtmlMail</span><span class="params">(String to, String subject, String content)</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 发送带附件的邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> filePath 附件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendAttachmentsMail</span><span class="params">(String to, String subject, String content, String filePath)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>IMailServiceImpl 实现类</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.jiangfeixiang.sendemail;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.slf4j.Logger;</span><br><span class="line"><span class="keyword">import</span> org.slf4j.LoggerFactory;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Value;</span><br><span class="line"><span class="keyword">import</span> org.springframework.core.io.FileSystemResource;</span><br><span class="line"><span class="keyword">import</span> org.springframework.mail.SimpleMailMessage;</span><br><span class="line"><span class="keyword">import</span> org.springframework.mail.javamail.JavaMailSender;</span><br><span class="line"><span class="keyword">import</span> org.springframework.mail.javamail.MimeMessageHelper;</span><br><span class="line"><span class="keyword">import</span> org.springframework.stereotype.Service;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.mail.MessagingException;</span><br><span class="line"><span class="keyword">import</span> javax.mail.internet.MimeMessage;</span><br><span class="line"><span class="keyword">import</span> java.io.File;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: 姜飞祥</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Description</span>:</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Date</span>: Create in 2019/1/28/0028 22:00</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span>: $params$</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span>: $returns$</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">IMailServiceImpl</span> <span class="keyword">implements</span> <span class="title class_">IMailService</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">Logger</span> <span class="variable">logger</span> <span class="operator">=</span> LoggerFactory.getLogger(<span class="built_in">this</span>.getClass());</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Spring Boot 提供了一个发送邮件的简单抽象，使用的是下面这个接口，这里直接注入即可使用</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> JavaMailSender mailSender;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 配置文件中我的qq邮箱</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;spring.mail.from&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String from;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 简单文本邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendSimpleMail</span><span class="params">(String to, String subject, String content)</span> &#123;</span><br><span class="line">        <span class="comment">//创建SimpleMailMessage对象</span></span><br><span class="line">        <span class="type">SimpleMailMessage</span> <span class="variable">message</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">SimpleMailMessage</span>();</span><br><span class="line">        <span class="comment">//邮件发送人</span></span><br><span class="line">        message.setFrom(from);</span><br><span class="line">        <span class="comment">//邮件接收人</span></span><br><span class="line">        message.setTo(to);</span><br><span class="line">        <span class="comment">//邮件主题</span></span><br><span class="line">        message.setSubject(subject);</span><br><span class="line">        <span class="comment">//邮件内容</span></span><br><span class="line">        message.setText(content);</span><br><span class="line">        <span class="comment">//发送邮件</span></span><br><span class="line">        mailSender.send(message);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * html邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendHtmlMail</span><span class="params">(String to, String subject, String content)</span> &#123;</span><br><span class="line">        <span class="comment">//获取MimeMessage对象</span></span><br><span class="line">        <span class="type">MimeMessage</span> <span class="variable">message</span> <span class="operator">=</span> mailSender.createMimeMessage();</span><br><span class="line">        MimeMessageHelper messageHelper;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            messageHelper = <span class="keyword">new</span> <span class="title class_">MimeMessageHelper</span>(message, <span class="literal">true</span>);</span><br><span class="line">            <span class="comment">//邮件发送人</span></span><br><span class="line">            messageHelper.setFrom(from);</span><br><span class="line">            <span class="comment">//邮件接收人</span></span><br><span class="line">            messageHelper.setTo(subject);</span><br><span class="line">            <span class="comment">//邮件主题</span></span><br><span class="line">            message.setSubject(subject);</span><br><span class="line">            <span class="comment">//邮件内容，html格式</span></span><br><span class="line">            messageHelper.setText(content, <span class="literal">true</span>);</span><br><span class="line">            <span class="comment">//发送</span></span><br><span class="line">            mailSender.send(message);</span><br><span class="line">            <span class="comment">//日志信息</span></span><br><span class="line">            logger.info(<span class="string">&quot;邮件已经发送。&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (MessagingException e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;发送邮件时发生异常！&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 带附件的邮件</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> to 收件人</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> subject 主题</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> content 内容</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> filePath 附件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendAttachmentsMail</span><span class="params">(String to, String subject, String content, String filePath)</span> &#123;</span><br><span class="line">        <span class="type">MimeMessage</span> <span class="variable">message</span> <span class="operator">=</span> mailSender.createMimeMessage();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="type">MimeMessageHelper</span> <span class="variable">helper</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">MimeMessageHelper</span>(message, <span class="literal">true</span>);</span><br><span class="line">            helper.setFrom(from);</span><br><span class="line">            helper.setTo(to);</span><br><span class="line">            helper.setSubject(subject);</span><br><span class="line">            helper.setText(content, <span class="literal">true</span>);</span><br><span class="line"></span><br><span class="line">            <span class="type">FileSystemResource</span> <span class="variable">file</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">FileSystemResource</span>(<span class="keyword">new</span> <span class="title class_">File</span>(filePath));</span><br><span class="line">            <span class="type">String</span> <span class="variable">fileName</span> <span class="operator">=</span> filePath.substring(filePath.lastIndexOf(File.separator));</span><br><span class="line">            helper.addAttachment(fileName, file);</span><br><span class="line">            mailSender.send(message);</span><br><span class="line">            <span class="comment">//日志信息</span></span><br><span class="line">            logger.info(<span class="string">&quot;邮件已经发送。&quot;</span>);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (MessagingException e) &#123;</span><br><span class="line">            logger.error(<span class="string">&quot;发送邮件时发生异常！&quot;</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>测试</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.jiangfeixiang.sendemail;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"><span class="keyword">import</span> org.junit.runner.RunWith;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.test.context.SpringBootTest;</span><br><span class="line"><span class="keyword">import</span> org.springframework.test.context.junit4.SpringRunner;</span><br><span class="line"></span><br><span class="line"><span class="meta">@RunWith(SpringRunner.class)</span></span><br><span class="line"><span class="meta">@SpringBootTest</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SendemailApplicationTests</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 注入发送邮件的接口</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> IMailService mailService;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 测试发送文本邮件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendmail</span><span class="params">()</span> &#123;</span><br><span class="line">        mailService.sendSimpleMail(<span class="string">&quot;smfx1314@163.com&quot;</span>,<span class="string">&quot;主题：你好普通邮件&quot;</span>,<span class="string">&quot;内容：第一封邮件&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendmailHtml</span><span class="params">()</span>&#123;</span><br><span class="line">        mailService.sendHtmlMail(<span class="string">&quot;smfx1314@163.com&quot;</span>,<span class="string">&quot;主题：你好html邮件&quot;</span>,<span class="string">&quot;&lt;h1&gt;内容：第一封html邮件&lt;/h1&gt;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>Java</category>
+        <category>SpringBoot</category>
+      </categories>
+      <tags>
+        <tag>springboot</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>PHP 调用 COM 组件方法</title>
+    <url>/2020/12/PHP%20%E8%B0%83%E7%94%A8%20COM%20%E7%BB%84%E4%BB%B6%E6%96%B9%E6%B3%95.html</url>
+    <content><![CDATA[<h1 id="0x00-开启-COM-组件扩展"><a href="#0x00-开启-COM-组件扩展" class="headerlink" title="0x00 开启 COM 组件扩展"></a>0x00 开启 COM 组件扩展</h1><p>打开 php.ini 配置文件，搜索 <code>#extension=php_com_dotnet.dll</code> ，将前面的 # 注释打开，然后重启 web 服务。</p>
+<p>可以使用 <code>phpinfo()</code> 函数打印并搜索 <code>com_dotnet</code> 关键字，确认扩展是否成功加载。</p>
+<span id="more"></span>
+
+<h1 id="0x01-注册-COM-组件-DLL-文件"><a href="#0x01-注册-COM-组件-DLL-文件" class="headerlink" title="0x01 注册 COM 组件 DLL 文件"></a>0x01 注册 COM 组件 DLL 文件</h1><p>在命令行下键入 <code>regsvr32 Ecgana.dll</code> 命令进行注册（文件名和路径自行更改）。</p>
+<h1 id="0x02-测试-COM-组件"><a href="#0x02-测试-COM-组件" class="headerlink" title="0x02 测试 COM 组件"></a>0x02 测试 COM 组件</h1><p>新建一个 php 文件，输入如下内容并访问，如果没有报错则说明组件引入成功：</p>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line"><span class="variable">$com</span> = <span class="keyword">new</span> \<span class="title function_ invoke__">COM</span>(<span class="string">&#x27;Ecgana.init&#x27;</span>); <span class="comment">// 括号内容请根据实际使用修改</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>测试发现，使用集成环境 PHPStudy 进行开发时，最新v8.1版在调用组件的时候报错，提示组件没有注册，而在旧版本中就不会出现问题。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>PHP</category>
+      </categories>
+      <tags>
+        <tag>php</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MyBatis 缓存导致查询非最新数据问题</title>
+    <url>/2020/12/MyBatis%20%E7%BC%93%E5%AD%98%E5%AF%BC%E8%87%B4%E6%9F%A5%E8%AF%A2%E9%9D%9E%E6%9C%80%E6%96%B0%E6%95%B0%E6%8D%AE%E9%97%AE%E9%A2%98.html</url>
+    <content><![CDATA[<h1 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h1><p>MyBatis 缓存导致查询非最新数据</p>
+<h1 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h1><p>在 mapper 的 xml 标签中加入 <code>flushCache=&quot;true&quot;</code> 和 <code>useCache=&quot;false&quot;</code> 属性</p>
+<span id="more"></span>
+
+<h1 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h1><p>当为 select 语句时：</p>
+<blockquote>
+<p>flushCache 默认为 false，表示任何时候语句被调用，都不会去清空本地缓存和二级缓存。<br>useCache 默认为 true，表示会将本条语句的结果进行二级缓存。</p>
+</blockquote>
+<p>当为 insert、update、delete 语句时：</p>
+<blockquote>
+<p>flushCache 默认为 true，表示任何时候语句被调用，都会导致本地缓存和二级缓存被清空。<br>useCache 属性在该情况下没有。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>Java</category>
+        <category>MyBatis</category>
+      </categories>
+      <tags>
+        <tag>mybatis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo 因主题文件夹存在 .git 而无法提交的解决方法</title>
+    <url>/2020/07/Hexo%20%E5%9B%A0%E4%B8%BB%E9%A2%98%E6%96%87%E4%BB%B6%E5%A4%B9%E5%AD%98%E5%9C%A8%20.git%20%E8%80%8C%E6%97%A0%E6%B3%95%E6%8F%90%E4%BA%A4%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95.html</url>
+    <content><![CDATA[<h1 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h1><p>无法提交根本原因是next主题也是一个repo。</p>
+<h1 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h1><p>1、剪切 themes&#x2F;next&#x2F;.git 文件夹到其他处</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">mv</span> themes/next/.git ~/otherpath</span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>或者直接删除（视情况而定）</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">rm</span> -r themes/next/.git</span></span><br></pre></td></tr></table></figure>
+
+<p>2、从暂存区删除该文件夹</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git <span class="built_in">rm</span> --cache themes/next</span></span><br></pre></td></tr></table></figure>
+
+<p>3、使用 <code>git status</code> 查看状态</p>
+<p>4、提交三连</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git add .</span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git commit -m <span class="string">&quot;message&quot;</span></span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git push</span></span><br></pre></td></tr></table></figure>
+
+<p>5、移回 themes&#x2F;next&#x2F;.git 文件夹（未删除处理）</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">mv</span> ~/otherpath themes/next/.git</span></span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>JavaScript</category>
+        <category>NodeJS</category>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+        <tag>git</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Manjaro 报 Cannot find the fakeroot binary 错误原因及解决</title>
+    <url>/2020/07/Manjaro%20%E6%8A%A5%20Cannot%20find%20the%20fakeroot%20binary%20%E9%94%99%E8%AF%AF%E5%8E%9F%E5%9B%A0%E5%8F%8A%E8%A7%A3%E5%86%B3.html</url>
+    <content><![CDATA[<h1 id="报错内容"><a href="#报错内容" class="headerlink" title="报错内容"></a>报错内容</h1><blockquote>
+<p>ERROR: Cannot find the fakeroot binary required for building as non-root user.<br>ERROR: Cannot find the strip binary required for object file stripping.  </p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h1><p>没安装 fakeroot、binutils 等打包基本工具</p>
+<h1 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h1><p>运行如下命令进行安装：</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">sudo pacman -Sy base-devel</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Manjaro</category>
+      </categories>
+      <tags>
+        <tag>manjaro</tag>
+        <tag>error</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Linux 解决从 Github 下载慢问题</title>
+    <url>/2020/07/Linux%20%E8%A7%A3%E5%86%B3%E4%BB%8E%20Github%20%E4%B8%8B%E8%BD%BD%E6%85%A2%E9%97%AE%E9%A2%98.html</url>
+    <content><![CDATA[<h1 id="查看-Github-访问节点-IP"><a href="#查看-Github-访问节点-IP" class="headerlink" title="查看 Github 访问节点 IP"></a>查看 Github 访问节点 IP</h1><p>访问 <code>https://www.ipaddress.com/</code> 查询下面三个域名的 IP 节点</p>
+<blockquote>
+<p>github.com<br>github.global.ssl.fastly.net<br>codeload.github.com  </p>
+</blockquote>
+<span id="more"></span>
+
+<h1 id="修改-hosts-文件"><a href="#修改-hosts-文件" class="headerlink" title="修改 hosts 文件"></a>修改 hosts 文件</h1><p>如下命令打开 hosts 文件</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">vim /etc/hosts</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="在-hosts-文件中添加-Github-的域名指向"><a href="#在-hosts-文件中添加-Github-的域名指向" class="headerlink" title="在 hosts 文件中添加 Github 的域名指向"></a>在 hosts 文件中添加 Github 的域名指向</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">192.30.253.113  github.com</span><br><span class="line">151.101.185.194 github.global.ssl.fastly.net</span><br><span class="line">192.30.253.120  codeload.github.com</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意修改上面内容的实际 IP</p>
+</blockquote>
+<h1 id="重新载入网络配置"><a href="#重新载入网络配置" class="headerlink" title="重新载入网络配置"></a>重新载入网络配置</h1><p>运行如下命令</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">/etc/init.d/networking restart</span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>Linux</category>
+      </categories>
+      <tags>
+        <tag>github</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>解决 Manjaro 系统无法驱动 8821CE 无线网卡</title>
+    <url>/2020/07/%E8%A7%A3%E5%86%B3%20Manjaro%20%E7%B3%BB%E7%BB%9F%E6%97%A0%E6%B3%95%E9%A9%B1%E5%8A%A8%208821CE%20%E6%97%A0%E7%BA%BF%E7%BD%91%E5%8D%A1.html</url>
+    <content><![CDATA[<h1 id="查看网卡型号和驱动状态"><a href="#查看网卡型号和驱动状态" class="headerlink" title="查看网卡型号和驱动状态"></a>查看网卡型号和驱动状态</h1><p>首先通过命令 <code>lspci -k | grep Wireless</code> 看一下原因是否为缺少 wifi 驱动，如下，如果没有 Kernel driver in use，说明缺少驱动。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">05:00.0 Network controller: Realtek Semiconductor Co., Ltd. RTL8821CE 802.11ac PCIe Wireless Network Adapter</span><br><span class="line">        Subsystem: Lenovo RTL8821CE 802.11ac PCIe Wireless Network Adapter</span><br><span class="line">        Kernel driver in use: rtl8821ce</span><br><span class="line">        Kernel modules: 8821ce</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h1 id="安装无线网卡驱动"><a href="#安装无线网卡驱动" class="headerlink" title="安装无线网卡驱动"></a>安装无线网卡驱动</h1><p>接着就是安装对应的网卡驱动，这里要比较注意的是系统本身的版本问题，查看系统的内核与系统的内核的headers的版本是否对应。如果不对应，升级到对应的版本，因为在安装驱动时，会检查内核与和headers的版本，如果不适配，无法安装驱动。不过这里如果升级了内核需要注意，一些软件，包之类的可能需要重启才能使用。例如我在升级内核版本时，系统一些软件和系统设置都出现了中文乱码及显示错误信息的情况。然后使用使用 yay 下载驱动。</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">sudo pacman -S manjaro-firmware # 不确定是否必要</span><br><span class="line">sudo pacman -S yay</span><br><span class="line">yay -S rtl8821ce-dkms-git</span><br><span class="line">sudo pacman -S linux419-headers # 这里需要选择对应内核</span><br><span class="line">sudo modprobe 8821ce</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注：如果在 <code>yay -S rtl8821ce-dkms-git</code> 这一步遇到了权限不足，需要加上 -force 参数来强制下载。</p>
+</blockquote>
+<p>如果以上过程都成功的话，现在应该已经可以在网络中看到开启 wifi 的选项了。</p>
+]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Manjaro</category>
+      </categories>
+      <tags>
+        <tag>manjaro</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hexo 添加分类及标签</title>
+    <url>/2020/07/Hexo%20%E6%B7%BB%E5%8A%A0%E5%88%86%E7%B1%BB%E5%8F%8A%E6%A0%87%E7%AD%BE.html</url>
+    <content><![CDATA[<blockquote>
+<p>生成的新文件夹都在source下也就是和放文章的文件夹一块<br>以下所有命令都是在博客文件目录下执行</p>
+</blockquote>
+<h1 id="创建“分类”选项"><a href="#创建“分类”选项" class="headerlink" title="创建“分类”选项"></a>创建“分类”选项</h1><p>生成“分类”页并添加tpye属性,进入博客目录。执行命令下方命令</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">hexo new page categories</span></span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<p>categories文件夹下会有index.md这个文件，打开后默认内容是这样的：</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: categories</span><br><span class="line"><span class="section">date: 2019-04-22 14:47:40</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>
+
+<p>添加type: “categories”到内容中，添加后是这样的：</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: 分类</span><br><span class="line">date: 2019-04-24 15:30:30</span><br><span class="line"><span class="section">type: categories</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>
+
+<p>保存并关闭文件。 </p>
+<p>给文章添加“categories”属性 </p>
+<p>打开需要添加分类的文章，为其添加categories属性。下方的categories:Hexo表示这篇文章添加到到“Hexo”这个分类。注意：一篇文章只会添加到一个分类中，如果是多个默认放到第一个分类中。 </p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Hexo 添加分类及标签</span><br><span class="line">date: 2017-05-26 12:12:57</span><br><span class="line"><span class="section">categories: Hexo</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>
+
+<p>至此，成功给文章添加分类，点击首页的“分类”可以看到该分类下的所有文章。当然，只有添加了categories: xxx的文章才会被收录到首页的“分类”中。</p>
+<h1 id="创建“标签”选项"><a href="#创建“标签”选项" class="headerlink" title="创建“标签”选项"></a>创建“标签”选项</h1><p>生成“标签”页并添加tpye属性</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">hexo new page tags</span></span><br></pre></td></tr></table></figure>
+
+<p>在tags文件夹下，找到index.md这个文件，打开后默认内容是这样的：</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: 标签</span><br><span class="line"><span class="section">date: 2019-04-22 14:22:08</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>
+
+<p>添加type: “tags”到内容中，添加后是这样的：</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: 标签</span><br><span class="line">date: 2019-04-24 15:40:24</span><br><span class="line"><span class="section">type: tags</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>
+
+<p>保存并关闭文件。</p>
+<p>给文章添加“tags”属性,打开需要添加标签的文章，为其添加tags属性。</p>
+<figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Hexo 添加分类及标签</span><br><span class="line">date: 2019-04-24 15:40:24</span><br><span class="line">categories: </span><br><span class="line"><span class="bullet">  -</span> Hexo</span><br><span class="line">tags:</span><br><span class="line"><span class="section">  - 博客</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>JavaScript</category>
+        <category>NodeJS</category>
+        <category>Hexo</category>
+      </categories>
+      <tags>
+        <tag>hexo</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Debian9 启动后进入命令行</title>
+    <url>/2020/07/Debian9%20%E5%90%AF%E5%8A%A8%E5%90%8E%E8%BF%9B%E5%85%A5%E5%91%BD%E4%BB%A4%E8%A1%8C.html</url>
+    <content><![CDATA[<h1 id="打开-default-grub-配置"><a href="#打开-default-grub-配置" class="headerlink" title="打开 default grub 配置"></a>打开 default grub 配置</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo vi /etc/default/grub</span></span><br></pre></td></tr></table></figure>
+
+<p>修改以下3处内容</p>
+<ol>
+<li>找到行 <code>GRUB_CMDLINE_LINUX_DEFAULT=&quot;quiet&quot;</code>，加#注释掉这一行配置</li>
+<li>找到行 <code>GRUB_CMDLINE_LINUX=&quot;&quot;</code>，修改为 <code>GRUB_CMDLINE_LINUX=&quot;text&quot;</code></li>
+<li>找到行 <code>#GRUB_TERMINAL=console</code>，去掉#注释</li>
+</ol>
+<span id="more"></span>
+
+<p>保存修改</p>
+<h1 id="更新-grub-配置"><a href="#更新-grub-配置" class="headerlink" title="更新 grub 配置"></a>更新 grub 配置</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo update-grub</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="设置为多用户（命令行）启动"><a href="#设置为多用户（命令行）启动" class="headerlink" title="设置为多用户（命令行）启动"></a>设置为多用户（命令行）启动</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo systemctl set-default multi-user.target</span></span><br></pre></td></tr></table></figure>
+
+<p>进入命令行界面，输入 startx 命令就可以打开图形界面</p>
+<figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo startx</span></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>从图形界面切换到命令行界面，可以通过组合键 Ctrl + Alt + F2……F6<br>如果要重新修改为图形界面启动<br>还原grub文件中修改的3处内容  </p>
+</blockquote>
+<h1 id="设置图形界面启动"><a href="#设置图形界面启动" class="headerlink" title="设置图形界面启动"></a>设置图形界面启动</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo systemctl set-default graphical.target</span></span><br></pre></td></tr></table></figure>]]></content>
+      <categories>
+        <category>Linux</category>
+        <category>Debian</category>
+      </categories>
+      <tags>
+        <tag>debian</tag>
+      </tags>
+  </entry>
+</search>

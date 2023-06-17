@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 6.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha256-HtsXJanqjKTc8vVQjO4YMhiqFoXkfBsjBWcX91T1jr8=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Gemini","darkmode":true,"version":"8.17.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":{"enable":false,"style":null},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"Searching...","empty":"We didn't find any results for the search: ${query}","hits_time":"${hits} results found in ${time} ms","hits":"${hits} results found"},"path":"/search.xml","localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="0x01 简介跨站脚本（cross site script）为了避免与样式css混淆，所以简称为XSS。 XSS是一种经常出现在web应用中的计算机安全漏洞，也是web中最主流的攻击方式。 XSS 攻击指黑客通过特殊的手段往网页中插入了恶意的 JavaScript 脚本，从而在用户浏览网页时，对用户浏览器发起 Cookie 资料窃取、会话劫持、钓鱼欺骗等各攻击。 XSS 跨站脚本攻击本身对 Web">
+<meta property="og:type" content="article">
+<meta property="og:title" content="XSS 入门详解">
+<meta property="og:url" content="http://example.com/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3.html">
+<meta property="og:site_name" content="INF05EC">
+<meta property="og:description" content="0x01 简介跨站脚本（cross site script）为了避免与样式css混淆，所以简称为XSS。 XSS是一种经常出现在web应用中的计算机安全漏洞，也是web中最主流的攻击方式。 XSS 攻击指黑客通过特殊的手段往网页中插入了恶意的 JavaScript 脚本，从而在用户浏览网页时，对用户浏览器发起 Cookie 资料窃取、会话劫持、钓鱼欺骗等各攻击。 XSS 跨站脚本攻击本身对 Web">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/01.png">
+<meta property="og:image" content="http://example.com/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/02.png">
+<meta property="og:image" content="http://example.com/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/03.png">
+<meta property="og:image" content="http://example.com/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/04.png">
+<meta property="article:published_time" content="2023-06-14T15:10:00.000Z">
+<meta property="article:modified_time" content="2023-06-17T14:10:29.028Z">
+<meta property="article:author" content="DQ">
+<meta property="article:tag" content="xss">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/01.png">
+
+
+<link rel="canonical" href="http://example.com/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3.html">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"en","comments":true,"permalink":"http://example.com/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3.html","path":"2023/06/XSS 入门详解.html","title":"XSS 入门详解"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>XSS 入门详解 | INF05EC</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">INF05EC</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Who am i?</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="Search" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>Tags</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>Categories</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a></li><li class="menu-item menu-item-apps"><a href="/apps/" rel="section"><i class="fa fa-flask fa-fw"></i>Apps</a></li><li class="menu-item menu-item-links"><a href="/links/" rel="section"><i class="fa fa-link fa-fw"></i>Links</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>About</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>Search
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup"><div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off" maxlength="80"
+           placeholder="Searching..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close" role="button">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div class="search-result-container no-result">
+  <div class="search-result-icon">
+    <i class="fa fa-spinner fa-pulse fa-5x"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#0x01-%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">0x01 简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#0x02-%E8%B7%A8%E7%AB%99%E8%84%9A%E6%9C%AC%E5%AE%9E%E4%BE%8B"><span class="nav-number">2.</span> <span class="nav-text">0x02 跨站脚本实例</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#0x03-XSS-%E7%9A%84%E5%8D%B1%E5%AE%B3"><span class="nav-number">3.</span> <span class="nav-text">0x03 XSS 的危害</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#0x04-%E5%88%86%E7%B1%BB"><span class="nav-number">4.</span> <span class="nav-text">0x04 分类</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#x0x04001-%E5%8F%8D%E5%B0%84%E5%9E%8BXSS%EF%BC%88%E9%9D%9E%E6%8C%81%E4%B9%85%E5%9E%8B%EF%BC%89"><span class="nav-number">4.1.</span> <span class="nav-text">x0x04001 反射型XSS（非持久型）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04002-%E5%AD%98%E5%82%A8%E5%9E%8BXSS%EF%BC%88%E6%8C%81%E4%B9%85%E5%9E%8B%EF%BC%89"><span class="nav-number">4.2.</span> <span class="nav-text">0x04002 存储型XSS（持久型）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04003-DOM%E5%9E%8BXSS"><span class="nav-number">4.3.</span> <span class="nav-text">0x04003 DOM型XSS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04004-%E9%80%9A%E7%94%A8%E5%9E%8BXSS"><span class="nav-number">4.4.</span> <span class="nav-text">0x04004 通用型XSS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#0x04005-%E7%AA%81%E5%8F%98%E5%9E%8BXSS"><span class="nav-number">4.5.</span> <span class="nav-text">0x04005 突变型XSS</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="DQ"
+      src="/images/avatar.jpg">
+  <p class="site-author-name" itemprop="name">DQ</p>
+  <div class="site-description" itemprop="description">I don't know!</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">categories</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">tags</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.jpg">
+      <meta itemprop="name" content="DQ">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="INF05EC">
+      <meta itemprop="description" content="I don't know!">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="XSS 入门详解 | INF05EC">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          [置顶]XSS 入门详解
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">Posted on</span>
+
+      <time title="Created: 2023-06-14 23:10:00" itemprop="dateCreated datePublished" datetime="2023-06-14T23:10:00+08:00">2023-06-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">Edited on</span>
+      <time title="Modified: 2023-06-17 22:10:29" itemprop="dateModified" datetime="2023-06-17T22:10:29+08:00">2023-06-17</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">In</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Security/" itemprop="url" rel="index"><span itemprop="name">Security</span></a>
+        </span>
+          , 
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Security/WEB/" itemprop="url" rel="index"><span itemprop="name">WEB</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="0x01-简介"><a href="#0x01-简介" class="headerlink" title="0x01 简介"></a>0x01 简介</h1><p><strong>跨站脚本</strong>（cross site script）为了避免与样式css混淆，所以简称为XSS。 XSS是一种经常出现在web应用中的计算机安全漏洞，也是web中最主流的攻击方式。</p>
+<p><strong>XSS</strong> 攻击指黑客通过特殊的手段往网页中插入了恶意的 JavaScript 脚本，从而在用户浏览网页时，对用户浏览器发起 Cookie 资料窃取、会话劫持、钓鱼欺骗等各攻击。</p>
+<p>XSS 跨站脚本攻击本身对 Web 服务器没有直接危害，它借助网站进行传播，使网站的大量用户受到攻击。攻击者一般通过留言、电子邮件或其他途径向受害者发送一个精心构造的恶意 URL，当受害者在 Web 浏览器中打开该URL的时侯，恶意脚本会在受害者的计算机上悄悄执行。</p>
+<span id="more"></span>
+
+<p>XSS 跨站脚本攻击漏洞也是OWASP Top 10中经常出现的对象，造成XSS漏洞普遍流行的原因如下:</p>
+<ol>
+<li>Web 浏览器本身的设计不安全，无法判断 JS 代码是否是恶意的</li>
+<li>输入与输出的 Web 应用程序基本交互防护不够</li>
+<li>程序员缺乏安全意识，缺少对 XSS 漏洞的认知</li>
+<li>XSS 触发简单，完全防御起来相当困难</li>
+</ol>
+<p>XSS攻击的危害包括：</p>
+<ol>
+<li>盗取各类用户帐号，如机器登录帐号、用户网银帐号、各类管理员帐号</li>
+<li>控制企业数据，包括读取、篡改、添加、删除企业敏感数据的能力</li>
+<li>盗窃企业重要的具有商业价值的资料</li>
+<li>非法转账</li>
+<li>强制发送电子邮件</li>
+<li>网站挂马</li>
+<li>控制受害者机器向其它网站发起攻击</li>
+</ol>
+<h1 id="0x02-跨站脚本实例"><a href="#0x02-跨站脚本实例" class="headerlink" title="0x02 跨站脚本实例"></a>0x02 跨站脚本实例</h1><p>下面的 HTML 代码就演示了一个最基本的 XSS 弹窗:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">script</span>&gt;</span>alert(1)<span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>直接在 HTML 页面通过</p>
+<h1 id="0x03-XSS-的危害"><a href="#0x03-XSS-的危害" class="headerlink" title="0x03 XSS 的危害"></a>0x03 XSS 的危害</h1><p>XSS 可能不如 SQL 注射、文件上传等能够直接得到较高操作权限的漏洞，但是它的运用十分灵活（这使它成为最深受黑客喜爱的攻击技术之一），只要开拓思维，适当结合其他技术一起运用，XSS 的威力还是很大的。可能会给网站和用户带来的危害简单概括如下:</p>
+<ol>
+<li>网络钓鱼</li>
+<li>盗取用户 cookies 信息</li>
+<li>劫持用户浏览器</li>
+<li>强制弹出广告页面、刷流量</li>
+<li>网页挂马</li>
+<li>进行恶意操作，例如任意篡改页面信息</li>
+<li>获取客户端隐私信息</li>
+<li>控制受害者机器向其他网站发起攻击</li>
+<li>结合其他漏洞，如 CSRF 漏洞，实施进一步作恶</li>
+<li>提升用户权限，包括进一步渗透网站</li>
+<li>传播跨站脚本蠕虫等</li>
+</ol>
+<h1 id="0x04-分类"><a href="#0x04-分类" class="headerlink" title="0x04 分类"></a>0x04 分类</h1><h2 id="x0x04001-反射型XSS（非持久型）"><a href="#x0x04001-反射型XSS（非持久型）" class="headerlink" title="x0x04001 反射型XSS（非持久型）"></a>x0x04001 反射型XSS（非持久型）</h2><p>反射型XSS只是简单的把用户输入的数据从服务器反射给用户浏览器，要利用这个漏洞，攻击者必须以某种方式诱导用户访问一个精心设计的URL（恶意链接），才能实施攻击。</p>
+<p><strong>漏洞成因</strong></p>
+<ol>
+<li>当用户的输入或者一些用户可控参数未经处理地输出到页面上，就容易产生XSS漏洞。主要场景有以下几种:</li>
+<li>将不可信数据插入到HTML标签之间时，例如: div, p, td；</li>
+<li>将不可信数据插入到HTML属性里时，例如: <code>&lt;div width=$INPUT&gt;&lt;/div&gt;</code></li>
+<li>将不可信数据插入到SCRIPT里时，例如: <code>&lt;script&gt;var message = &quot;$INPUT&quot;;&lt;/script&gt;</code></li>
+<li>还有插入到Style属性里的情况，同样具有一定的危害性，例如: <code>&lt;span style=&quot;property : $INPUT&quot;&gt;&lt;/span&gt;</code></li>
+<li>将不可信数据插入到HTML URL里时，例如: <code>&lt;a href=&quot;[http://www.abcd.com?param=](http://www.ccc.com/?param=) $INPUT&quot;&gt;&lt;/a&gt;</code></li>
+<li>使用富文本时，没有使用XSS规则引擎进行编码过滤</li>
+</ol>
+<p>对于以上的几个场景，若服务端或者前端没有做好防范措施，就会出现漏洞隐患。</p>
+<p><strong>攻击流程</strong></p>
+<p>反射型XSS通常出现在搜索等功能中，需要被攻击者点击对应的链接才能触发，且受到XSS Auditor(chrome内置的XSS保护)、NoScript等防御手段的影响较大，所以它的危害性较存储型要小。</p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/01.png" alt="图01"></p>
+<h2 id="0x04002-存储型XSS（持久型）"><a href="#0x04002-存储型XSS（持久型）" class="headerlink" title="0x04002 存储型XSS（持久型）"></a>0x04002 存储型XSS（持久型）</h2><p><strong>漏洞成因</strong></p>
+<p>存储型XSS漏洞的成因与反射型的根源类似，不同的是恶意代码会被保存在服务器中，导致其它用户（前端）和管理员（前后端）在访问资源时执行了恶意代码，用户访问服务器-跨站链接-返回跨站代码。</p>
+<p><strong>攻击流程</strong></p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/02.png" alt="图02"></p>
+<h2 id="0x04003-DOM型XSS"><a href="#0x04003-DOM型XSS" class="headerlink" title="0x04003 DOM型XSS"></a>0x04003 DOM型XSS</h2><p>输入的恶意代码不会经过服务器，在前端被js代码直接读取放置到前端的标签中，是一 种特殊的反射型XSS。</p>
+<p><strong>漏洞成因</strong></p>
+<p>DOM型XSS是基于DOM文档对象模型的。对于浏览器来说，DOM文档就是一份XML文档，当有了这个标准的技术之后，通过JavaScript就可以轻松的访问DOM。当确认客户端代码中有DOM型XSS漏洞时，诱使(钓鱼)一名用户访问自己构造的URL，利用步骤和反射型很类似，但是唯一的区别就是，构造的URL参数不用发送到服务器端，可以达到绕过WAF、躲避服务端的检测效果。</p>
+<p>下面编写一个简单的含有 DOM XSS漏洞的 HTML 代码:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">meta</span> <span class="attr">charset</span>=<span class="string">&quot;UTF-8&quot;</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span>&gt;</span><span class="language-javascript"></span></span><br><span class="line"><span class="language-javascript">    <span class="keyword">function</span> <span class="title function_">xss</span>(<span class="params"></span>)&#123;</span></span><br><span class="line"><span class="language-javascript">        <span class="keyword">var</span> str = <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;src&quot;</span>).<span class="property">value</span>;</span></span><br><span class="line"><span class="language-javascript">        <span class="variable language_">document</span>.<span class="title function_">getElementById</span>(<span class="string">&quot;demo&quot;</span>).<span class="property">innerHTML</span> = <span class="string">&quot;&lt;img src=&#x27;&quot;</span>+str+<span class="string">&quot;&#x27; /&gt;&quot;</span>;</span></span><br><span class="line"><span class="language-javascript">    &#125;</span></span><br><span class="line"><span class="language-javascript"></span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">&quot;text&quot;</span> <span class="attr">id</span>=<span class="string">&quot;src&quot;</span> <span class="attr">size</span>=<span class="string">&quot;50&quot;</span> <span class="attr">placeholder</span>=<span class="string">&quot;输入图片地址&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">input</span> <span class="attr">type</span>=<span class="string">&quot;button&quot;</span> <span class="attr">value</span>=<span class="string">&quot;插入&quot;</span> <span class="attr">onclick</span>=<span class="string">&quot;xss()&quot;</span> /&gt;</span><span class="tag">&lt;<span class="name">br</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">div</span> <span class="attr">id</span>=<span class="string">&quot;demo&quot;</span> &gt;</span><span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>用户输入框插入图片地址后，页面会将图片插入在id&#x3D;“demo” 的 div 标签中，从而显示在网页上:</p>
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/03.png" alt="图03"></p>
+<p>同样，这里也没有对用户的输入进入过滤，当攻击者构造如下语句插入的时候:</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">&quot;1&quot;</span> <span class="attr">onerror</span>=<span class="string">&quot;alert(1)&quot;</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p><img src="/resources/post_image/2023/06/XSS%20%E5%85%A5%E9%97%A8%E8%AF%A6%E8%A7%A3/04.png" alt="图04"></p>
+<p>会直接在img标签中插入onerror事件，该语句表示当图片加载出错的时候，自动触发后面的 alert()函数，来达到弹窗的效果，这就是一个最简单的 DOM 型 XSS 漏洞。</p>
+<h2 id="0x04004-通用型XSS"><a href="#0x04004-通用型XSS" class="headerlink" title="0x04004 通用型XSS"></a>0x04004 通用型XSS</h2><p>通用型XSS，也叫做UXSS或者Universal XSS，全称Universal Cross-Site Scripting。</p>
+<p>上面三种XSS攻击的是因为客户端或服务端的代码开发不严谨等问题而存在漏洞的目标网站或者应用程序。这些攻击的先决条件是访问页面存在漏洞，但是UXSS是一种利用浏览器或者浏览器扩展漏洞来制造产生XSS的条件并执行代码的一种攻击类型。</p>
+<p><strong>漏洞成因</strong></p>
+<p>Web浏览器是正在使用的最流行的应用程序之一，当一个新漏洞被发现的时候，不管自己利用还是说报告给官方，而这个过程中都有一段不小的时间，这一过程中漏洞都可能被利用于UXSS。</p>
+<p>不仅是浏览器本身的漏洞，现在主流浏览器都支持扩展程序的安装，而众多的浏览器扩展程序可能导致带来更多的漏洞和安全问题。因为UXSS攻击不需要网站页面本身存在漏洞，同时可能访问其他安全无漏洞页面，使得UXSS成为XSS里危险和最具破坏性的攻击类型之一。</p>
+<p><strong>漏洞案例</strong></p>
+<p>IE6或火狐浏览器扩展程序Adobe Acrobat的漏洞</p>
+<p>这是一个比较经典的例子。当使用扩展程序时导致错误，使得代码可以执行。这是一个在pdf阅读器中的bug，允许攻击者在客户端执行脚本。构造恶意页面，写入恶意脚本，并利用扩展程序打开pdf时运行代码。tefano Di Paola 和 Giorgio Fedon在一个在Mozilla Firefox浏览器Adobe Reader的插件中可利用的缺陷中第一个记录和描述的UXSS，Adobe插件通过一系列参数允许从外部数据源取数据进行文档表单的填充，如果没有正确的执行，将允许跨站脚本攻击。</p>
+<h2 id="0x04005-突变型XSS"><a href="#0x04005-突变型XSS" class="headerlink" title="0x04005 突变型XSS"></a>0x04005 突变型XSS</h2><p>突变型XSS，也叫做mXSS或，全称Mutation-based Cross-Site-Scripting。（mutation，突变，来自遗传学的一个单词，大家都知道的基因突变，gene mutation）</p>
+<p><strong>漏洞成因</strong></p>
+<p>然而，如果用户所提供的富文本内容通过javascript代码进入innerHTML属性后，一些意外的变化会使得这个认定不再成立：浏览器的渲染引擎会将本来没有任何危害的HTML代码渲染成具有潜在危险的XSS攻击代码。</p>
+<p>随后，该段攻击代码，可能会被JS代码中的其它一些流程输出到DOM中或是其它方式被再次渲染，从而导致XSS的执行。 这种由于HTML内容进入innerHTML后发生意外变化，而最终导致XSS的攻击流程。</p>
+<p><strong>攻击流程</strong></p>
+<p>将拼接的内容置于innerHTML这种操作，在现在的WEB应用代码中十分常见，常见的WEB应用中很多都使用了innerHTML属性，这将会导致潜在的mXSS攻击。从浏览器角度来讲，mXSS对三大主流浏览器（IE，CHROME，FIREFOX）均有影响。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/xss/" rel="tag"># xss</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/05/MySQL%20%E6%95%B0%E6%8D%AE%E5%AF%BC%E5%85%A5%E5%A4%B1%E8%B4%A5%E7%9A%84%E5%B8%B8%E8%A7%81%E6%8A%A5%E9%94%99%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95.html" rel="prev" title="MySQL 数据导入失败的常见报错和解决方法">
+                  <i class="fa fa-chevron-left"></i> MySQL 数据导入失败的常见报错和解决方法
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">DQ</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="back-to-top" role="button" aria-label="Back to top">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

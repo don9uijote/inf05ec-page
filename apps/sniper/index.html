@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>步枪着弹点计算</title>
+    <link rel="stylesheet" href="./lib/layui/css/layui.css"  media="all">
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/3.4.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./lib/layui/layui.js"></script>
+    <style>
+        html,body {
+            margin: 5px;
+            padding: 5px;
+        }
+        .main {
+            position: relative;
+            width: 625px;
+            height: 625px;
+            overflow: hidden;
+            background-image: url("img/bg.gif");
+            background-size: 20px 20px;
+            cursor: none;
+        }
+        .mirror {
+            position: relative;
+            width: 1250px;
+            height: 1250px;
+            left: -312.5px;
+            top: -312.5px;
+            pointer-events: none;
+        }
+        .mirror>div {
+            float: left;
+        }
+        .mirror-up {
+            width: 1250px;
+            height: 509.5px;
+            background-color: #000000;
+        }
+        .mirror-left {
+            width: 509.5px;
+            height: 231px;
+            background-color: #000000;
+        }
+        .mirror-center {
+            width: 231px;
+            height: 231px;
+            background-image: url("img/mirror.png");
+        }
+        .mirror-right {
+            width: 509.5px;
+            height: 231px;
+            background-color: #000000;
+        }
+        .mirror-down {
+            width: 1250px;
+            height: 509.5px;
+            background-color: #000000;
+        }
+        .start {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: #00ff00;
+            z-index: 99999;
+            top: 0px;
+            left: 0px;
+            display: none;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        .end {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: #ff0000;
+            z-index: 99999;
+            top: 0px;
+            left: 0px;
+            display: none;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        .bullet {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            background-color: #ff9900;
+            z-index: 99999;
+            top: 0px;
+            left: 0px;
+            display: none;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+        .info {
+            position: absolute;
+            top: 50px;
+            left: 320px;
+            width: 100px;
+        }
+        .info p {
+            width: 300px;
+        }
+        .arrows {
+            position: absolute;
+            top: 110px;
+            left: 300px;
+            width: 100px;
+            height: 100px;
+            background-image: url("./img/arrows.png");
+            transform: rotate(0deg);
+        }
+
+        .text {
+            position: absolute;
+            left: 675px;
+            top: 315px;
+            overflow: hidden;
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <table>
+        <tr>
+            <td style="text-align: center; width: 75px; padding-bottom: 10px">距离</td>
+            <td style="text-align: center; width: 75px; padding-bottom: 10px">风速</td>
+            <td style="text-align: center; width: 75px; padding-bottom: 10px">风向</td>
+        </tr>
+        <tr>
+            <td><div id="juli" class="demo-slider"></div></td>
+            <td><div id="fengsu" class="demo-slider"></div></td>
+            <td><div id="fengxiang" class="demo-slider"></div></td>
+        </tr>
+    </table>
+
+
+    <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
+        <legend>射击区域</legend>
+    </fieldset>
+    <div class="main">
+        <div class="mirror">
+            <div class="mirror-up"></div>
+            <div class="mirror-left"></div>
+            <div class="mirror-center"></div>
+            <div class="mirror-right"></div>
+            <div class="mirror-down"></div>
+        </div>
+        <div class="start"></div>
+        <div class="end"></div>
+        <div class="bullet"></div>
+    </div>
+    <div class="text">
+        <p><strong>说明</strong></p>
+        <p>· 每个方框代表1平方米偏移范围</p>
+        <p>· 忽略完全顺风和逆风的风阻问题</p>
+        <p>· 实际情况还需考虑温度、湿度、初速、角度等问题，本程序仅供娱乐</p>
+    </div>
+    <div class="arrows"></div>
+    <div class="info">
+        <p><span>距离：</span><span class="info-juli">800米</span></p>
+        <p><span>风速：</span><span class="info-fengsu">零级风（0公里每小时）</span></p>
+        <p><span>风速修正：</span><span class="info-fengxiang">零风速</span></p>
+    </div>
+</body>
+
+<script>
+    var fireX, fireY, feixing;
+    var shecheng = 1000;
+    var juli = 800, fengxiang = 0, fengsu = 0;
+    function offsetY (y, juli) {
+        var r;
+        r = y - (-1 * Math.pow(juli, 2) / (shecheng * shecheng)) * 20;
+        return r;
+    }
+    function offsetX (x, juli) {
+        var r = x, a = 1;
+        var b = juli / 100 * fengsu / 20;
+        if (fengxiang <= 57 && fengxiang >= 33) {
+            a = -1;
+        }
+        if ((fengxiang >= 58 || fengxiang <= 2) || (fengxiang >= 28 && fengxiang <= 32)) { // 6点、12点
+            r = x;
+        }else if ((fengxiang >= 3 && fengxiang <= 9) || (fengxiang >= 21 && fengxiang <= 27) || (fengxiang >= 33 && fengxiang <= 39) || (fengxiang >= 51 && fengxiang <= 57)) {
+            r = x + b / 2 * a;
+        }else if ((fengxiang >= 10 && fengxiang <= 20) || (fengxiang >= 40 && fengxiang <= 50)) { // 3点、9点
+            r = x + b * a;
+        }
+        return r;
+    }
+    function fire (event) {
+        feixing = 0;
+        fireX = event.offsetX - 1;
+        fireY = event.offsetY - 1;
+        $(".end").css("display", "none");
+        $(".start").css("display", "block");
+        $(".start").css("left", fireX);
+        $(".start").css("top", fireY);
+        var t = setInterval(function () {
+            fly();
+            feixing += 30;
+            if (feixing > juli) {
+                end();
+                clearTimeout(t);
+            }
+        }, 10);
+        function fly () {
+            var x = offsetX(fireX, feixing);
+            var y = offsetY(fireY, feixing);
+            var size = (juli - feixing) / juli * 9;
+            $(".bullet").css("width", size + 3);
+            $(".bullet").css("height", size + 3);
+            var width = $(".bullet").css("width").substr(0, $(".bullet").css("width").length - 2);
+            var height = $(".bullet").css("height").substr(0, $(".bullet").css("height").length - 2);
+            $(".bullet").css("display", "block");
+            $(".bullet").css("left", x - (width - 1) / 2);
+            $(".bullet").css("top", y - (height - 1) / 2);
+        }
+        function end () {
+            var x = offsetX(fireX, juli);
+            var y = offsetY(fireY, juli);
+            $(".bullet").css("display", "none");
+            $(".end").css("display", "block");
+            $(".end").css("left", x);
+            $(".end").css("top", y);
+        }
+    }
+    function move (event) {
+        var x = event.offsetX - 1250/2;
+        var y = event.offsetY - 1250/2;
+        $(".mirror").css("left", x);
+        $(".mirror").css("top", y);
+    }
+    $(".main").on("mousemove", function (event) {
+        move(event);
+    });
+    $(".main").on("mousedown", function (event) {
+        fire(event);
+    });
+    layui.use('slider', function(){
+        var slider = layui.slider;
+        // 距离
+        slider.render({
+            elem: '#juli'
+            ,min: 5 //最小值
+            ,max: 16 //最大值
+            ,value: 8
+            ,type: 'vertical'
+            ,height: 160
+            ,change: function (value) {
+                juli = value * 100;
+                var a = 20;
+                a = parseInt(800 / juli * a);
+                $(".main").css("background-size", a + "px " + a + "px");
+                $(".info-juli").html(juli + "米");
+            }
+        });
+        // 风向
+        slider.render({
+            elem: '#fengxiang'
+            ,min: 0 //最小值
+            ,max: 59 //最大值
+            ,type: 'vertical'
+            ,height: 160
+            ,change: function (value) {
+                fengxiang = value;
+                $(".arrows").css("transform", "rotate(" + fengxiang * 6 + "deg)");
+                if ((fengxiang >= 58 || fengxiang <= 2) || (fengxiang >= 28 && fengxiang <= 32)) {
+                    $(".info-fengxiang").html("零风速");
+                }else if ((fengxiang >= 3 && fengxiang <= 9) || (fengxiang >= 21 && fengxiang <= 27) || (fengxiang >= 33 && fengxiang <= 39) || (fengxiang >= 51 && fengxiang <= 57)) {
+                    $(".info-fengxiang").html("半风速");
+                }else if ((fengxiang >= 10 && fengxiang <= 20) || (fengxiang >= 40 && fengxiang <= 50)) {
+                    $(".info-fengxiang").html("全风速");
+                }
+            }
+        });
+        // 风速
+        slider.render({
+            elem: '#fengsu'
+            ,min: 0 //最小值
+            ,max: 60 //最大值
+            ,type: 'vertical'
+            ,height: 160
+            ,change: function (value) {
+                fengsu = value;
+                var dengji;
+                if (fengsu < 1) {
+                    dengji = "零级风";
+                }else if (fengsu >= 1 && fengsu <= 5) {
+                    dengji = "一级风";
+                }else if (fengsu >= 6 && fengsu <= 11) {
+                    dengji = "二级风";
+                }else if (fengsu >= 12 && fengsu <= 19) {
+                    dengji = "三级风";
+                }else if (fengsu >= 20 && fengsu <= 28) {
+                    dengji = "四级风";
+                }else if (fengsu >= 29 && fengsu <= 38) {
+                    dengji = "五级风";
+                }else if (fengsu >= 39 && fengsu <= 49) {
+                    dengji = "六级风";
+                }else if (fengsu >= 50 && fengsu <= 61) {
+                    dengji = "七级风";
+                }
+                $(".info-fengsu").html(dengji + "（" + fengsu + "公里每小时）");
+            }
+        });
+    });
+</script>
+</html>
