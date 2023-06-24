@@ -91,11 +91,12 @@
 <p>将拼接的内容置于innerHTML这种操作，在现在的WEB应用代码中十分常见，常见的WEB应用中很多都使用了innerHTML属性，这将会导致潜在的mXSS攻击。从浏览器角度来讲，mXSS对三大主流浏览器（IE，CHROME，FIREFOX）均有影响。</p>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>Security</category>
-        <category>WEB</category>
       </categories>
       <tags>
         <tag>xss</tag>
+        <tag>web</tag>
       </tags>
   </entry>
   <entry>
@@ -125,8 +126,8 @@
 <p>P.S. 修改当前 sql_mode 的 语句为 <code>select @@sql_mode;</code>，之后操作同上。</p>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>Database</category>
-        <category>MySQL</category>
       </categories>
       <tags>
         <tag>mysql</tag>
@@ -188,6 +189,7 @@
 </blockquote>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>Android</category>
       </categories>
       <tags>
@@ -222,8 +224,8 @@
 <p><strong>测试</strong></p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.jiangfeixiang.sendemail;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.junit.Test;</span><br><span class="line"><span class="keyword">import</span> org.junit.runner.RunWith;</span><br><span class="line"><span class="keyword">import</span> org.springframework.beans.factory.annotation.Autowired;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.test.context.SpringBootTest;</span><br><span class="line"><span class="keyword">import</span> org.springframework.test.context.junit4.SpringRunner;</span><br><span class="line"></span><br><span class="line"><span class="meta">@RunWith(SpringRunner.class)</span></span><br><span class="line"><span class="meta">@SpringBootTest</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">SendemailApplicationTests</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 注入发送邮件的接口</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> IMailService mailService;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 测试发送文本邮件</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendmail</span><span class="params">()</span> &#123;</span><br><span class="line">        mailService.sendSimpleMail(<span class="string">&quot;smfx1314@163.com&quot;</span>,<span class="string">&quot;主题：你好普通邮件&quot;</span>,<span class="string">&quot;内容：第一封邮件&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">sendmailHtml</span><span class="params">()</span>&#123;</span><br><span class="line">        mailService.sendHtmlMail(<span class="string">&quot;smfx1314@163.com&quot;</span>,<span class="string">&quot;主题：你好html邮件&quot;</span>,<span class="string">&quot;&lt;h1&gt;内容：第一封html邮件&lt;/h1&gt;&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>Java</category>
-        <category>SpringBoot</category>
       </categories>
       <tags>
         <tag>springboot</tag>
@@ -244,6 +246,7 @@
 </blockquote>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>PHP</category>
       </categories>
       <tags>
@@ -267,8 +270,8 @@
 </blockquote>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>Java</category>
-        <category>MyBatis</category>
       </categories>
       <tags>
         <tag>mybatis</tag>
@@ -296,13 +299,13 @@
 <p>5、移回 themes&#x2F;next&#x2F;.git 文件夹（未删除处理）</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash"><span class="built_in">mv</span> ~/otherpath themes/next/.git</span></span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>JavaScript</category>
-        <category>NodeJS</category>
-        <category>Hexo</category>
       </categories>
       <tags>
         <tag>hexo</tag>
         <tag>git</tag>
+        <tag>nodejs</tag>
       </tags>
   </entry>
   <entry>
@@ -317,8 +320,8 @@
 <h1 id="解决方法"><a href="#解决方法" class="headerlink" title="解决方法"></a>解决方法</h1><p>运行如下命令进行安装：</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">sudo pacman -Sy base-devel</span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>Linux</category>
-        <category>Manjaro</category>
       </categories>
       <tags>
         <tag>manjaro</tag>
@@ -345,6 +348,7 @@
 <h1 id="重新载入网络配置"><a href="#重新载入网络配置" class="headerlink" title="重新载入网络配置"></a>重新载入网络配置</h1><p>运行如下命令</p>
 <figure class="highlight shell"><table><tr><td class="code"><pre><span class="line">/etc/init.d/networking restart</span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>Linux</category>
       </categories>
       <tags>
@@ -368,8 +372,8 @@
 <p>如果以上过程都成功的话，现在应该已经可以在网络中看到开启 wifi 的选项了。</p>
 ]]></content>
       <categories>
+        <category>Technology</category>
         <category>Linux</category>
-        <category>Manjaro</category>
       </categories>
       <tags>
         <tag>manjaro</tag>
@@ -411,12 +415,12 @@
 <p>给文章添加“tags”属性,打开需要添加标签的文章，为其添加tags属性。</p>
 <figure class="highlight markdown"><table><tr><td class="code"><pre><span class="line">---</span><br><span class="line">title: Hexo 添加分类及标签</span><br><span class="line">date: 2019-04-24 15:40:24</span><br><span class="line">categories: </span><br><span class="line"><span class="bullet">  -</span> Hexo</span><br><span class="line">tags:</span><br><span class="line"><span class="section">  - 博客</span></span><br><span class="line"><span class="section">---</span></span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>JavaScript</category>
-        <category>NodeJS</category>
-        <category>Hexo</category>
       </categories>
       <tags>
         <tag>hexo</tag>
+        <tag>nodejs</tag>
       </tags>
   </entry>
   <entry>
@@ -445,8 +449,8 @@
 </blockquote>
 <h1 id="设置图形界面启动"><a href="#设置图形界面启动" class="headerlink" title="设置图形界面启动"></a>设置图形界面启动</h1><figure class="highlight shell"><table><tr><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">sudo systemctl set-default graphical.target</span></span><br></pre></td></tr></table></figure>]]></content>
       <categories>
+        <category>Technology</category>
         <category>Linux</category>
-        <category>Debian</category>
       </categories>
       <tags>
         <tag>debian</tag>
